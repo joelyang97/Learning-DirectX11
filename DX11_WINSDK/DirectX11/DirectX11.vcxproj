@@ -88,7 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\common;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -103,7 +103,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\common;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -118,7 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\common;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -133,7 +133,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\Learning-DirectX11\DX11_WINSDK\DirectX11\common;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\shader;F:\Learning-DirectX11\DX11_WINSDK\DirectX11\inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -143,6 +143,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="common\KeyBoard.h" />
+    <ClInclude Include="common\Mouse.h" />
     <ClInclude Include="inc\d3dApp.h" />
     <ClInclude Include="inc\d3dUtil.h" />
     <ClInclude Include="inc\DXTrace.h" />
@@ -150,6 +152,8 @@
     <ClInclude Include="inc\GameTimer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="common\Keyboard.cpp" />
+    <ClCompile Include="common\Mouse.cpp" />
     <ClCompile Include="src\d3dApp.cpp" />
     <ClCompile Include="src\d3dUtil.cpp" />
     <ClCompile Include="src\DXTrace.cpp" />

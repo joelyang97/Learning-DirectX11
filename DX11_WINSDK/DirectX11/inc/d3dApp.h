@@ -4,6 +4,8 @@
 #include <string>
 #include <d3d11_1.h>
 #include <DirectXMath.h>
+#include "Mouse.h"
+#include "KeyBoard.h"
 #include "GameTimer.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -65,6 +67,11 @@ protected:
 	ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;
 
 	D3D11_VIEWPORT	m_ScreenViewport;
+
+	std::unique_ptr<DirectX::Mouse> m_pMouse;
+	DirectX::Mouse::ButtonStateTracker m_MouseTracker;
+	std::unique_ptr<DirectX::Keyboard> m_pKeyboard;
+	DirectX::Keyboard::KeyboardStateTracker m_KeyboardTracker;
 
 	std::wstring m_MainWndCaption;
 	int m_ClientWidth;

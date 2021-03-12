@@ -19,6 +19,9 @@ GameApp::~GameApp() {
 }
 
 bool GameApp::Init() {
+	m_pMouse = std::make_unique<DirectX::Mouse>();
+	m_pKeyboard = std::make_unique<DirectX::Keyboard>();
+
 	if (!D3DApp::Init())
 		return false;
 
@@ -28,6 +31,8 @@ bool GameApp::Init() {
 	if (!InitResource())
 		return false;
 
+	m_pMouse->SetWindow(m_hMainWnd);
+	m_pMouse->SetMode(DirectX::Mouse::MODE_ABSOLUTE);
 	return true;
 }
 
@@ -38,15 +43,36 @@ void GameApp::OnResize() {
 void GameApp::UpdateScene(float dt) {
 
 	static float phi = 0.0f, theta = 0.0f;
-	phi += 0.0001f, theta += 0.00015f;
+
+	Mouse::State mouseState = m_pMouse->GetState();
+	Mouse::State lastMouseState = m_MouseTracker.GetLastState();
+
+	Keyboard::State keyState = m_pKeyboard->GetState();
+	Keyboard::State lastKetState = m_KeyboardTracker.GetLastState();
+
+	m_MouseTracker.Update(mouseState);
+	m_KeyboardTracker.Update(keyState);
+
+	if (mouseState.leftButton == true && m_MouseTracker.leftButton == m_MouseTracker.HELD)
+	{
+		theta -= (mouseState.x - lastMouseState.x) * 0.01f;
+		phi -= (mouseState.y - lastMouseState.y) * 0.01f;
+	}
+	if (keyState.IsKeyDown(Keyboard::W))
+		phi += dt * 2;
+	if (keyState.IsKeyDown(Keyboard::S))
+		phi -= dt * 2;
+	if (keyState.IsKeyDown(Keyboard::A))
+		theta += dt * 2;
+	if (keyState.IsKeyDown(Keyboard::D))
+		theta -= dt * 2;
+
 	m_CBuffer.world = XMMatrixTranspose(XMMatrixRotationX(phi) * XMMatrixRotationY(theta));
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	HR(m_pd3dImmediateContext->Map(m_pConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 	memcpy_s(mappedData.pData, sizeof(m_CBuffer), &m_CBuffer, sizeof(m_CBuffer));
 	m_pd3dImmediateContext->Unmap(m_pConstantBuffer.Get(), 0);
-	//HR(m_pd3dImmediateContext->Map(m_pVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 
-	//m_pd3dImmediateContext->Unmap(m_pVertexBuffer.Get(), 0);
 }
 
 void GameApp::DrawScene() {
