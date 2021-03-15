@@ -306,8 +306,9 @@ bool D3DApp::InitMainWindow() {
 bool D3DApp::InitDirect3D() {
 	HRESULT hr = S_OK;
 
-	UINT createDeviceFlags = 0;
-#if defined(DEBUG) || defined(_DEBUG)
+	// 创建D3D设备 和 D3D设备上下文
+	UINT createDeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;	// Direct2D需要支持BGRA格式
+#if defined(DEBUG) || defined(_DEBUG)  
 	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
@@ -328,10 +329,12 @@ bool D3DApp::InitDirect3D() {
 	D3D_DRIVER_TYPE d3dDriverType;
 	for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
 		d3dDriverType = driverTypes[driverTypeIndex];
-		hr = D3D11CreateDevice(nullptr, d3dDriverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels, D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &featureLevel, m_pd3dImmediateContext.GetAddressOf());
+		hr = D3D11CreateDevice(nullptr, d3dDriverType, nullptr, createDeviceFlags, featureLevels, numFeatureLevels, 
+		D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &featureLevel, m_pd3dImmediateContext.GetAddressOf());
 
 		if (hr == E_INVALIDARG) {
-			hr = D3D11CreateDevice(nullptr, d3dDriverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1, D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &featureLevel, m_pd3dImmediateContext.GetAddressOf());
+			hr = D3D11CreateDevice(nullptr, d3dDriverType, nullptr, createDeviceFlags, &featureLevels[1], numFeatureLevels - 1, 
+			D3D11_SDK_VERSION, m_pd3dDevice.GetAddressOf(), &featureLevel, m_pd3dImmediateContext.GetAddressOf());
 		}
 
 		if (SUCCEEDED(hr)) {
@@ -469,7 +472,7 @@ void D3DApp::CalculateFrameStats() {
 
 		std::wostringstream outs;
 		outs.precision(6);
-		outs << m_MainWndCaption << L"   " << L"Fps: " << L"  " << L"Frame Time: " << mspf << L" (ms)";
+		outs << m_MainWndCaption << L"   " << L"Fps: "<< fps<< L"  " << L"Frame Time: " << mspf << L" (ms)";
 		SetWindowText(m_hMainWnd, outs.str().c_str());
 
 		frameCnt = 0;
