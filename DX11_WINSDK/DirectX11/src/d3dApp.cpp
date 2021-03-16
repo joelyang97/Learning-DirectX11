@@ -85,7 +85,8 @@ int D3DApp::Run() {
 }
 
 bool D3DApp::Init() {
-
+	if (!InitDirect2D())
+		return false;
 
 	if (!InitMainWindow())
 		return false;
@@ -113,7 +114,7 @@ void D3DApp::OnResize() {
 	m_pDepthStencilBuffer.Reset();
 
 	ComPtr<ID3D11Texture2D> backBuffer;
-	HR(m_pSwapChain->ResizeBuffers(1, m_ClientWidth, m_ClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+	HR(m_pSwapChain->ResizeBuffers(1, m_ClientWidth, m_ClientHeight, DXGI_FORMAT_B8G8R8A8_UNORM, 0));
 	HR(m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer.GetAddressOf())));
 	HR(m_pd3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, m_pRenderTargetView.GetAddressOf()));
 
@@ -302,6 +303,11 @@ bool D3DApp::InitMainWindow() {
 	return true;
 }
 
+bool D3DApp::InitDirect2D() {
+	HR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, m_pd2dFactory.GetAddressOf()));
+	HR(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(m_pdwriteFactory.GetAddressOf())));
+	return true;
+}
 
 bool D3DApp::InitDirect3D() {
 	HRESULT hr = S_OK;
@@ -352,7 +358,7 @@ bool D3DApp::InitDirect3D() {
 		return false;
 	}
 
-	m_pd3dDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &m_4xMsaaQuality);
+	m_pd3dDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_B8G8R8A8_UNORM, 4, &m_4xMsaaQuality);
 	assert(m_4xMsaaQuality > 0);
 
 	ComPtr<IDXGIDevice> dxgiDevice = nullptr;
@@ -396,7 +402,7 @@ bool D3DApp::InitDirect3D() {
 		ZeroMemory(&sd, sizeof(sd));
 		sd.Width = m_ClientWidth;
 		sd.Height = m_ClientHeight;
-		sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 		if (m_Enable4xMsaa) {
 			sd.SampleDesc.Count = 4;
 			sd.SampleDesc.Quality = m_4xMsaaQuality - 1;
@@ -428,7 +434,7 @@ bool D3DApp::InitDirect3D() {
 		sd.BufferDesc.Height = m_ClientHeight;
 		sd.BufferDesc.RefreshRate.Numerator = 60;
 		sd.BufferDesc.RefreshRate.Denominator = 1;
-		sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
 		sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 		sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 		if (m_Enable4xMsaa) {

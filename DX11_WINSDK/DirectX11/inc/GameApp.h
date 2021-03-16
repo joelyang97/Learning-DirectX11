@@ -43,6 +43,10 @@ private:
 	bool ResetMesh(const Geometry::MeshData<VertexPosNormalColor>& meshData);
 
 private:
+	ComPtr<ID2D1SolidColorBrush> m_pColorBrush;
+	ComPtr<IDWriteFont> m_pFont;
+	ComPtr<IDWriteTextFormat> m_pTextFormat;
+	
 	ComPtr<ID3D11InputLayout> m_pVertexLayout;
 	ComPtr<ID3D11Buffer> m_pVertexBuffer;
 	ComPtr<ID3D11Buffer> m_pIndexBuffer;

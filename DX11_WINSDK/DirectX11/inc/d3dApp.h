@@ -2,12 +2,16 @@
 
 #include <wrl/client.h>
 #include <string>
+#include <d2d1.h>
+#include <dwrite.h>
 #include <d3d11_1.h>
 #include <DirectXMath.h>
 #include "Mouse.h"
 #include "KeyBoard.h"
 #include "GameTimer.h"
 
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dwrite.lib")
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -35,6 +39,7 @@ public:
 protected:
 	bool InitMainWindow();
 	bool InitDirect3D();
+	bool InitDirect2D();
 
 	void CalculateFrameStats();
 
@@ -53,6 +58,10 @@ protected:
 
 	template <class T>
 	using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+	ComPtr<ID2D1Factory> m_pd2dFactory;
+	ComPtr<ID2D1RenderTarget> m_pd2dRenderTarget;
+	ComPtr<IDWriteFactory> m_pdwriteFactory;
 
 	ComPtr<ID3D11Device>	m_pd3dDevice;
 	ComPtr<ID3D11DeviceContext>	m_pd3dImmediateContext;

@@ -34,7 +34,40 @@ bool GameApp::Init() {
 }
 
 void GameApp::OnResize() {
+	assert(m_pd2dFactory);
+	assert(m_pdwriteFactory);
+
+	m_pColorBrush.Reset();
+	m_pd2dRenderTarget.Reset();
+
 	D3DApp::OnResize();
+
+	ComPtr<IDXGISurface> surface;
+	HR(m_pSwapChain->GetBuffer(0, __uuidof(IDXGISurface), reinterpret_cast<void**>(surface.GetAddressOf())));
+	D2D1_RENDER_TARGET_PROPERTIES props = D2D1::RenderTargetProperties(
+		D2D1_RENDER_TARGET_TYPE_DEFAULT,
+		D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED));
+	HRESULT hr = m_pd2dFactory->CreateDxgiSurfaceRenderTarget(surface.Get(), &props, m_pd2dRenderTarget.GetAddressOf());
+	surface.Reset();
+
+	if (hr == E_NOINTERFACE) {
+		OutputDebugStringW(L"\n警告：Direct2D与Direct3D互操作性功能受限，你将无法看到文本信息。现提供下述�?选方法：\n"
+			L"1. 对于Win7系统，需要更新至Win7 SP1，并安�?�KB2670838补丁以支持Direct2D显示。\n"
+			L"2. �?行完成Direct3D 10.1与Direct2D的交互。�?�情参阅�?"
+			L"https://docs.microsoft.com/zh-cn/windows/desktop/Direct2D/direct2d-and-direct3d-interoperation-overview""\n"
+			L"3. 使用�?的字体库，比如FreeType。\n\n");
+	}
+	else if (hr == S_OK) {
+		HR(m_pd2dRenderTarget->CreateSolidColorBrush(
+			D2D1::ColorF(D2D1::ColorF::White),
+			m_pColorBrush.GetAddressOf()));
+		HR(m_pdwriteFactory->CreateTextFormat(L"宋体", nullptr, DWRITE_FONT_WEIGHT_NORMAL,
+			DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20, L"zh-cn",
+			m_pTextFormat.GetAddressOf()));
+	}
+	else {
+		assert(m_pd2dRenderTarget);
+	}
 }
 
 void GameApp::UpdateScene(float dt) {
@@ -68,7 +101,7 @@ void GameApp::UpdateScene(float dt) {
 		m_PSConstantBuffer.spotLight = m_SpotLight;
 	}
 
-	// 键盘切换模型类型
+	// �?盘切换模型类�?
 	if (m_KeyboardTracker.IsKeyPressed(Keyboard::Q))
 	{
 		auto meshData = Geometry::CreateBox<VertexPosNormalColor>();
@@ -116,6 +149,20 @@ void GameApp::DrawScene() {
 	m_pd3dImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	m_pd3dImmediateContext->DrawIndexed(m_IndexCount, 0, 0);
+
+	if (m_pd2dRenderTarget != nullptr) {
+		m_pd2dRenderTarget->BeginDraw();
+		std::wstring textStr = L"切换灯光类型: 1-平行光 2-点光 3-聚光灯\n"
+			L"切换模型: Q-立方体 W-球体 E-圆柱体 R-圆锥体\n"
+			L"S-切换模式 当前模式: ";
+		if (m_IsWireframeMode)
+			textStr += L"线框模式\n";
+		else
+			textStr += L"面模式\n";
+		m_pd2dRenderTarget->DrawTextW(textStr.c_str(), (UINT32)textStr.size(), m_pTextFormat.Get(),
+			D2D1_RECT_F{ 0.0f, 0.0f, 600.0f, 200.0f }, m_pColorBrush.Get());
+		HR(m_pd2dRenderTarget->EndDraw());
+	}
 	HR(m_pSwapChain->Present(0, 0));
 }
 
@@ -133,7 +180,7 @@ bool GameApp::InitEffect() {
 }
 
 bool GameApp::InitResource() {
-	// 设置三角形顶点
+	// 设置三�?�形顶点
 	auto meshData = Geometry::CreateBox<VertexPosNormalColor>();
 	ResetMesh(meshData);
 
@@ -170,13 +217,13 @@ bool GameApp::InitResource() {
 
 	m_VSConstantBuffer.world = XMMatrixIdentity();
 	m_VSConstantBuffer.view = XMMatrixTranspose(XMMatrixLookAtLH(
-	XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f), 
-	XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), 
-	XMVectorSet(0.0f, 1.0f, 0.0f, 0.0)
+		XMVectorSet(0.0f, 0.0f, -5.0f, 0.0f),
+		XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0)
 	));
 	m_VSConstantBuffer.proj = XMMatrixTranspose(XMMatrixPerspectiveFovLH(XM_PIDIV2, AspectRatio(), 1.0f, 1000.0f));
 	m_VSConstantBuffer.worldInvTranspose = XMMatrixIdentity();
-	
+
 	m_PSConstantBuffer.material.ambient = XMFLOAT4(0.5, 0.5f, 0.5, 1.0f);
 	m_PSConstantBuffer.material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	m_PSConstantBuffer.material.specular = XMFLOAT4(0.5f, 0.5f, 0.5f, 5.0f);
@@ -202,10 +249,10 @@ bool GameApp::InitResource() {
 	m_pd3dImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_pd3dImmediateContext->IASetInputLayout(m_pVertexLayout.Get());
 
-	
+
 	m_pd3dImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffers[0].GetAddressOf());
 	m_pd3dImmediateContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-	
+
 	m_pd3dImmediateContext->PSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
 	m_pd3dImmediateContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 	D3D11SetDebugObjectName(m_pVertexLayout.Get(), "VertexPosNormalColorLayout");
