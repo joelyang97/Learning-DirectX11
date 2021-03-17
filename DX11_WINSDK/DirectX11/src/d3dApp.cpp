@@ -85,10 +85,11 @@ int D3DApp::Run() {
 }
 
 bool D3DApp::Init() {
-	if (!InitDirect2D())
+	if (!InitMainWindow())
 		return false;
 
-	if (!InitMainWindow())
+
+	if (!InitDirect2D())
 		return false;
 
 	if (!InitDirect3D())
@@ -236,6 +237,7 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		((MINMAXINFO*)lParam)->ptMinTrackSize.x = 200;
 		((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
 		return 0;
+	case WM_INPUT:
 	case WM_LBUTTONDOWN:
 	case WM_MBUTTONDOWN:
 	case WM_RBUTTONDOWN:
@@ -285,12 +287,15 @@ bool D3DApp::InitMainWindow() {
 		return false;
 	}
 
+	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
 	RECT R = { 0, 0, m_ClientWidth, m_ClientHeight };
 	AdjustWindowRect(&R, WS_OVERLAPPEDWINDOW, false);
 	int width = R.right - R.left;
 	int height = R.bottom - R.top;
 
-	m_hMainWnd = CreateWindow(L"D3DWndClassName", m_MainWndCaption.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, 0, 0, m_hAppInst, 0);
+	m_hMainWnd = CreateWindow(L"D3DWndClassName", m_MainWndCaption.c_str(), WS_OVERLAPPEDWINDOW, (screenWidth - width) / 2, (screenHeight - height) /2, width, height, 0, 0, m_hAppInst, 0);
 
 	if (!m_hMainWnd) {
 		MessageBox(0, L"CreateWindow Failed.", 0, 0);

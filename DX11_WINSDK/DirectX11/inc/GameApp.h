@@ -3,21 +3,25 @@
 #include "d3dApp.h"
 #include "LightHelper.h"
 #include "Geometry.h"
+#include "Camera.h"
+
 class GameApp : public D3DApp {
 public:
-
-
-	struct VSConstantBuffer
-	{
+	struct CBChangesEveryDrawing {
 		DirectX::XMMATRIX world;
-		DirectX::XMMATRIX view;
-		DirectX::XMMATRIX proj;
 		DirectX::XMMATRIX worldInvTranspose;
-
 	};
 
-	struct PSConstantBuffer
-	{
+	struct CBChangesEveryFrame {
+		DirectX::XMMATRIX view;
+		DirectX::XMFLOAT4 eyePos;
+	};
+
+	struct CBChangesOnResize {
+		DirectX::XMMATRIX proj;
+	};
+
+	struct CBChangesRarely {
 		DirectionalLight dirLight[10];
 		PointLight pointLight[10];
 		SpotLight spotLight[10];
@@ -26,11 +30,32 @@ public:
 		int numPointLight;
 		int numSpotLight;
 		float pad;
-		DirectX::XMFLOAT4 eyePos;
 	};
 
-	enum class ShowMode { WoodCrate, FireAnim };
+	class GameObject {
+	public:
+		GameObject();
 
+		Transform& GetTransform();
+		const Transform& GetTransform() const;
+
+		template<class VertexType, class IndexType>
+		void SetBuffer(ID3D11Device* device, const Geometry::MeshData<VertexType, IndexType>& meshData);
+		void SetTexture(ID3D11ShaderResourceView* texture);
+
+		void Draw(ID3D11DeviceContext* deviceContext);
+		void SetDebugObjectName(const std::string& name);
+
+	private:
+		Transform m_Transform;
+		ComPtr<ID3D11ShaderResourceView> m_pTexture;
+		ComPtr<ID3D11Buffer> m_pVertexBuffer;
+		ComPtr<ID3D11Buffer> m_pIndexBuffer;
+		UINT m_VertexStride;
+		UINT m_IndexCount;
+	};
+
+	enum class CameraMode{FirstPerson, ThirdPerson, Free};
 
 public:
 	GameApp(HINSTANCE hInstance);
@@ -46,8 +71,6 @@ private:
 	bool InitEffect();
 	bool InitResource();
 
-	template<class VertexType>
-	bool ResetMesh(const Geometry::MeshData<VertexType>& meshData);
 
 private:
 	ComPtr<ID2D1SolidColorBrush> m_pColorBrush;
@@ -56,22 +79,24 @@ private:
 
 	ComPtr<ID3D11InputLayout> m_pVertexLayout2D;
 	ComPtr<ID3D11InputLayout> m_pVertexLayout3D;
-	ComPtr<ID3D11Buffer> m_pVertexBuffer;
-	ComPtr<ID3D11Buffer> m_pIndexBuffer;
-	ComPtr<ID3D11Buffer> m_pConstantBuffers[2];
-	UINT m_IndexCount;
-	int m_CurrFrame;
-	ShowMode m_CurrMode;
+	ComPtr<ID3D11Buffer> m_pConstantBuffers[4];
 
-	ComPtr<ID3D11ShaderResourceView> m_pWoodCrate;
-	std::vector<ComPtr<ID3D11ShaderResourceView>> m_pFireAnims;
-	ComPtr<ID3D11SamplerState> m_pSamplerState;
+	GameObject m_WoodCrate;
+	GameObject m_Floor;
+	std::vector<GameObject> m_Walls;
 
 	ComPtr<ID3D11VertexShader> m_pVertexShader3D;
 	ComPtr<ID3D11PixelShader> m_pPixelShader3D;
 	ComPtr<ID3D11VertexShader> m_pVertexShader2D;
 	ComPtr<ID3D11PixelShader> m_pPixelShader2D;
-	VSConstantBuffer m_VSConstantBuffer;
-	PSConstantBuffer m_PSConstantBuffer;
+
+	CBChangesEveryFrame m_CBFrame;
+	CBChangesOnResize m_CBOnResize;
+	CBChangesRarely m_CBRarely;
+
+	ComPtr<ID3D11SamplerState> m_pSamplerState;
+
+	std::shared_ptr<Camera> m_pCamera;
+	CameraMode m_CameraMode;
 
 };

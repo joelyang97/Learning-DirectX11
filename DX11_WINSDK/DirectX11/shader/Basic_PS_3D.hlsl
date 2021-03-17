@@ -4,7 +4,7 @@ float4 PS_3D(VertexPosHWNormalTex pIn) : SV_TARGET
 {
     pIn.NormalW = normalize(pIn.NormalW);
 	
-    float3 toEyeW = normalize(g_EvePosW - pIn.PosW);
+    float3 toEyeW = normalize(g_EyePosW - pIn.PosW);
 	
     float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
     float4 diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
