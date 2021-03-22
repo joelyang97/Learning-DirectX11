@@ -155,6 +155,7 @@
     <ClInclude Include="inc\GameTimer.h" />
     <ClInclude Include="inc\Geometry.h" />
     <ClInclude Include="inc\LightHelper.h" />
+    <ClInclude Include="inc\RenderStates.h" />
     <ClInclude Include="inc\Transform.h" />
     <ClInclude Include="inc\Vertex.h" />
   </ItemGroup>
@@ -170,6 +171,7 @@
     <ClCompile Include="src\GameApp.cpp" />
     <ClCompile Include="src\GameTimer.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\RenderStates.cpp" />
     <ClCompile Include="src\Transform.cpp" />
     <ClCompile Include="src\Vertex.cpp" />
   </ItemGroup>
