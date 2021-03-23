@@ -14,9 +14,14 @@ public:
 		Material material;
 	};
 
+	struct CBDrawingStates {
+		int isReflection;
+		DirectX::XMFLOAT3 pad;
+	};
+
 	struct CBChangesEveryFrame {
 		DirectX::XMMATRIX view;
-		DirectX::XMVECTOR eyePos;
+		DirectX::XMFLOAT4 eyePos;
 	};
 
 	struct CBChangesOnResize {
@@ -24,6 +29,7 @@ public:
 	};
 
 	struct CBChangesRarely {
+		DirectX::XMMATRIX reflection;
 		DirectionalLight dirLight[10];
 		PointLight pointLight[10];
 		SpotLight spotLight[10];
@@ -82,18 +88,20 @@ private:
 
 	ComPtr<ID3D11InputLayout> m_pVertexLayout2D;
 	ComPtr<ID3D11InputLayout> m_pVertexLayout3D;
-	ComPtr<ID3D11Buffer> m_pConstantBuffers[4];
+	ComPtr<ID3D11Buffer> m_pConstantBuffers[5];
 
 	GameObject m_WireFence;
 	GameObject m_Floor;
 	GameObject m_Water;
 	std::vector<GameObject> m_Walls;
+	GameObject m_Mirror;
 
 	ComPtr<ID3D11VertexShader> m_pVertexShader3D;
 	ComPtr<ID3D11PixelShader> m_pPixelShader3D;
 	ComPtr<ID3D11VertexShader> m_pVertexShader2D;
 	ComPtr<ID3D11PixelShader> m_pPixelShader2D;
 
+	CBDrawingStates m_CBStates;
 	CBChangesEveryFrame m_CBFrame;
 	CBChangesOnResize m_CBOnResize;
 	CBChangesRarely m_CBRarely;

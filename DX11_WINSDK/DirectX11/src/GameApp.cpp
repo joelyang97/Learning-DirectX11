@@ -29,7 +29,8 @@ bool GameApp::Init() {
 		return false;
 
 	m_pMouse->SetWindow(m_hMainWnd);
-	m_pMouse->SetMode(DirectX::Mouse::MODE_ABSOLUTE);
+	m_pMouse->SetMode(DirectX::Mouse::MODE_RELATIVE);
+
 	return true;
 }
 
@@ -69,46 +70,95 @@ void GameApp::OnResize() {
 		assert(m_pd2dRenderTarget);
 	}
 
-	if (m_pCamera != nullptr) {
+	if (m_pConstantBuffers[3] != nullptr) {
 		m_pCamera->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
 		m_pCamera->SetViewPort(0.0f, 0.0f, (float)m_ClientWidth, (float)m_ClientHeight);
 		m_CBOnResize.proj = XMMatrixTranspose(m_pCamera->GetProjXM());
 
 		D3D11_MAPPED_SUBRESOURCE mappedData;
-		HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[2].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+		HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[3].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 		memcpy_s(mappedData.pData, sizeof(CBChangesOnResize), &m_CBOnResize, sizeof(CBChangesOnResize));
-		m_pd3dImmediateContext->Unmap(m_pConstantBuffers[2].Get(), 0);
+		m_pd3dImmediateContext->Unmap(m_pConstantBuffers[3].Get(), 0);
 	}
 }
 
 void GameApp::UpdateScene(float dt) {
 	Mouse::State mouseState = m_pMouse->GetState();
 	Mouse::State lastMouseState = m_MouseTracker.GetLastState();
+	m_MouseTracker.Update(mouseState);
 
 	Keyboard::State keyState = m_pKeyboard->GetState();
 	m_KeyboardTracker.Update(keyState);
 
-	auto cam3st = std::dynamic_pointer_cast<ThirdPersonCamera>(m_pCamera);
+	auto cam3rt = std::dynamic_pointer_cast<ThirdPersonCamera>(m_pCamera);
+	auto cam1st = std::dynamic_pointer_cast<FirstPersonCamera>(m_pCamera);
 
-	if (mouseState.positionMode == Mouse::MODE_RELATIVE) {
-		cam3st->RotateX(mouseState.y * dt * 1.25f);
-		cam3st->RotateY(mouseState.x * dt * 1.25f);
-		cam3st->Approach(-mouseState.scrollWheelValue / 120 * 1.0f);
+	if (m_CameraMode == CameraMode::Free) {
+		if (keyState.IsKeyDown(Keyboard::W))
+			cam1st->MoveForward(dt * 6.0f);
+		if (keyState.IsKeyDown(Keyboard::S))
+			cam1st->MoveForward(dt * -6.0f);
+		if (keyState.IsKeyDown(Keyboard::A))
+			cam1st->Strafe(dt * -6.0f);
+		if (keyState.IsKeyDown(Keyboard::D))
+			cam1st->Strafe(dt * 6.0f);
+
+		cam1st->Pitch(mouseState.y * dt * 1.25f);
+		cam1st->RotateY(mouseState.x * dt * 1.25f);
+	}
+	else if (m_CameraMode == CameraMode::ThirdPerson) {
+		cam3rt->SetTarget(m_WireFence.GetTransform().GetPosition());
+
+		if (mouseState.positionMode == Mouse::MODE_RELATIVE) {
+			cam3rt->RotateX(mouseState.y * dt * 1.25f);
+			cam3rt->RotateY(mouseState.x * dt * 1.25f);
+			cam3rt->Approach(-mouseState.scrollWheelValue / 120 * 1.0f);
+		}
 	}
 
-	m_CBFrame.eyePos = m_pCamera->GetPositionXM();
+	XMStoreFloat4(&m_CBFrame.eyePos, m_pCamera->GetPositionXM());
 	m_CBFrame.view = XMMatrixTranspose(m_pCamera->GetViewXM());
 
 	m_pMouse->ResetScrollWheelValue();
+
+	if (m_KeyboardTracker.IsKeyPressed(Keyboard::D1) && m_CameraMode != CameraMode::ThirdPerson) {
+		if (!cam3rt) {
+			cam3rt.reset(new ThirdPersonCamera);
+			cam3rt->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+			m_pCamera = cam3rt;
+		}
+
+		XMFLOAT3 target = m_WireFence.GetTransform().GetPosition();
+		cam3rt->SetTarget(target);
+		cam3rt->SetDistance(8.0f);
+		cam3rt->SetDistanceMinMax(3.0f, 20.0f);
+		cam3rt->SetRotationX(XM_PIDIV4);
+
+		m_CameraMode = CameraMode::ThirdPerson;
+	}
+	else if (m_KeyboardTracker.IsKeyPressed(Keyboard::D2) && m_CameraMode != CameraMode::Free) {
+		if (!cam1st) {
+			cam1st.reset(new FirstPersonCamera);
+			cam1st->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
+			m_pCamera = cam1st;
+		}
+
+		XMFLOAT3 pos = m_WireFence.GetTransform().GetPosition();
+		XMFLOAT3 look{ 0.0f, 0.0f, 1.0f };
+		XMFLOAT3 up{ 0.0f, 1.0f, 0.0f };
+		pos.y += 3;
+		cam1st->LookTo(pos, look, up);
+
+		m_CameraMode = CameraMode::Free;
+	}
 
 	if (keyState.IsKeyDown(Keyboard::Escape))
 		SendMessage(MainHnd(), WM_DESTROY, 0, 0);
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[2].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
 	memcpy_s(mappedData.pData, sizeof(CBChangesEveryFrame), &m_CBFrame, sizeof(CBChangesEveryFrame));
-	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
-
+	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[2].Get(), 0);
 }
 
 void GameApp::DrawScene() {
@@ -118,30 +168,68 @@ void GameApp::DrawScene() {
 	m_pd3dImmediateContext->ClearRenderTargetView(m_pRenderTargetView.Get(), reinterpret_cast<const float*>(&Colors::Black));
 	m_pd3dImmediateContext->ClearDepthStencilView(m_pDepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+
 	m_pd3dImmediateContext->RSSetState(nullptr);
-	m_pd3dImmediateContext->OMSetBlendState(nullptr, nullptr, 0xffffffff);
+	m_pd3dImmediateContext->OMSetDepthStencilState(RenderStates::DSSWriteStencil.Get(), 1);
+	m_pd3dImmediateContext->OMSetBlendState(RenderStates::BSNoColorWrite.Get(), nullptr, 0xffffffff);
 
+	m_Mirror.Draw(m_pd3dImmediateContext.Get());
 
+	m_CBStates.isReflection = true;
+	D3D11_MAPPED_SUBRESOURCE mappedData;
+	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+	memcpy_s(mappedData.pData, sizeof(CBDrawingStates), &m_CBStates, sizeof(CBDrawingStates));
+	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
 
+	m_pd3dImmediateContext->RSSetState(RenderStates::RSCullClockWise.Get());
+	m_pd3dImmediateContext->OMSetDepthStencilState(RenderStates::DSSDrawWithStencil.Get(), 1);
+	m_pd3dImmediateContext->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+
+	m_Walls[2].Draw(m_pd3dImmediateContext.Get());
+	m_Walls[3].Draw(m_pd3dImmediateContext.Get());
+	m_Walls[4].Draw(m_pd3dImmediateContext.Get());
 	m_Floor.Draw(m_pd3dImmediateContext.Get());
+
+		
+	m_pd3dImmediateContext->RSSetState(RenderStates::RSNoCull.Get());
+	m_pd3dImmediateContext->OMSetDepthStencilState(RenderStates::DSSDrawWithStencil.Get(), 1);
+	m_pd3dImmediateContext->OMSetBlendState(RenderStates::BSTransparent.Get(), nullptr, 0xFFFFFFFF);
+
+	m_WireFence.Draw(m_pd3dImmediateContext.Get());
+	m_Water.Draw(m_pd3dImmediateContext.Get());
+	m_Mirror.Draw(m_pd3dImmediateContext.Get());
+
+	m_CBStates.isReflection = false;
+	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[1].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+	memcpy_s(mappedData.pData, sizeof(CBDrawingStates), &m_CBStates, sizeof(CBDrawingStates));
+	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[1].Get(), 0);
+
+	m_pd3dImmediateContext->RSSetState(nullptr);
+	m_pd3dImmediateContext->OMSetDepthStencilState(nullptr, 0);
+	m_pd3dImmediateContext->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+
 	for (auto& wall : m_Walls)
 		wall.Draw(m_pd3dImmediateContext.Get());
+	m_Floor.Draw(m_pd3dImmediateContext.Get());
 
 	m_pd3dImmediateContext->RSSetState(RenderStates::RSNoCull.Get());
+	m_pd3dImmediateContext->OMSetDepthStencilState(nullptr, 0);
 	m_pd3dImmediateContext->OMSetBlendState(RenderStates::BSTransparent.Get(), nullptr, 0xFFFFFFFF);
-	Transform& wireFrameTransform = m_WireFence.GetTransform();
-	wireFrameTransform.SetPosition(2.0f, 0.01f, 0.0f);
-	m_WireFence.Draw(m_pd3dImmediateContext.Get());
-	wireFrameTransform.SetPosition(-2.0f, 0.01f, 0.0f);
+
 	m_WireFence.Draw(m_pd3dImmediateContext.Get());
 	m_Water.Draw(m_pd3dImmediateContext.Get());
 
 	if (m_pd2dRenderTarget != nullptr) {
 		m_pd2dRenderTarget->BeginDraw();
-		std::wstring textStr = L"当前摄像机模式：第三人称视角  Esc退出\n"
+		std::wstring text = L"切换摄像机模式: 1-第三人称 2-自由视角\n"
+			L"W/S/A/D 前进/后退/左平移/右平移 (第三人称无效)  Esc退出\n"
 			L"鼠标移动控制视野 滚轮控制第三人称观察距离\n"
 			L"当前模式: ";
-		m_pd2dRenderTarget->DrawTextW(textStr.c_str(), (UINT32)textStr.size(), m_pTextFormat.Get(),
+		if (m_CameraMode == CameraMode::ThirdPerson)
+			text += L"第三人称";
+		else
+			text += L"自由视角";
+		m_pd2dRenderTarget->DrawTextW(text.c_str(), (UINT32)text.length(), m_pTextFormat.Get(),
 			D2D1_RECT_F{ 0.0f, 0.0f, 600.0f, 200.0f }, m_pColorBrush.Get());
 		HR(m_pd2dRenderTarget->EndDraw());
 	}
@@ -177,12 +265,15 @@ bool GameApp::InitResource() {
 	cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	cbd.ByteWidth = sizeof(CBChangesEveryDrawing);
 	HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[0].GetAddressOf()));
-	cbd.ByteWidth = sizeof(CBChangesEveryFrame);
+	cbd.ByteWidth = sizeof(CBDrawingStates);
 	HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[1].GetAddressOf()));
-	cbd.ByteWidth = sizeof(CBChangesOnResize);
+	cbd.ByteWidth = sizeof(CBChangesEveryFrame);
 	HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[2].GetAddressOf()));
-	cbd.ByteWidth = sizeof(CBChangesRarely);
+	cbd.ByteWidth = sizeof(CBChangesOnResize);
 	HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[3].GetAddressOf()));
+	cbd.ByteWidth = sizeof(CBChangesRarely);
+	HR(m_pd3dDevice->CreateBuffer(&cbd, nullptr, m_pConstantBuffers[4].GetAddressOf()));
+
 
 	ComPtr<ID3D11ShaderResourceView> texture;
 	Material material{};
@@ -191,24 +282,40 @@ bool GameApp::InitResource() {
 	material.specular = XMFLOAT4(0.2f, 0.2f, 0.2f, 16.0f);
 	HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\WireFence.dds", nullptr, texture.GetAddressOf()));
 	m_WireFence.SetBuffer(m_pd3dDevice.Get(), Geometry::CreateBox());
+	m_WireFence.GetTransform().SetPosition(0.0f, 0.01f, 7.5f);
 	m_WireFence.SetTexture(texture.Get());
 	m_WireFence.SetMaterial(material);
 
 	HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\floor.dds", nullptr, texture.ReleaseAndGetAddressOf()));
 	m_Floor.SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(20.0f, 20.0f), XMFLOAT2(5.0f, 5.0f)));
 	m_Floor.SetTexture(texture.Get());
+	m_Floor.SetMaterial(material);
 	m_Floor.GetTransform().SetPosition(0.0f, -1.0f, 0.0f);
 
-	m_Walls.resize(4);
+	m_Walls.resize(5);
 	HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\brick.dds", nullptr, texture.ReleaseAndGetAddressOf()));
-	for (int i = 0; i < 4; ++i) {
-		m_Walls[i].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(20.0f, 8.0f), XMFLOAT2(5.0f, 1.5f)));
+	for (int i = 0; i < 5; ++i) {
+
 		m_Walls[i].SetMaterial(material);
-		Transform& transform = m_Walls[i].GetTransform();
-		transform.SetRotation(-XM_PIDIV2, XM_PIDIV2 * i, 0.0f);
-		transform.SetPosition(i % 2 ? -10.0f * (i - 2) : 0.0f, 3.0f, i % 2 == 0 ? -10.0f * (i - 1) : 0.0f);
 		m_Walls[i].SetTexture(texture.Get());
 	}
+	m_Walls[0].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(6.0f, 8.0f), XMFLOAT2(1.5f, 2.0f)));
+	m_Walls[1].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(6.0f, 8.0f), XMFLOAT2(1.5f, 2.0f)));
+	m_Walls[2].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(20.0f, 8.0f), XMFLOAT2(5.0f, 2.0f)));
+	m_Walls[3].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(20.0f, 8.0f), XMFLOAT2(5.0f, 2.0f)));
+	m_Walls[4].SetBuffer(m_pd3dDevice.Get(), Geometry::CreatePlane(XMFLOAT2(20.0f, 8.0f), XMFLOAT2(5.0f, 2.0f)));
+
+	m_Walls[0].GetTransform().SetRotation(-XM_PIDIV2, 0.0f, 0.0f);
+	m_Walls[0].GetTransform().SetPosition(-7.0f, 3.0f, 10.0f);
+	m_Walls[1].GetTransform().SetRotation(-XM_PIDIV2, 0.0f, 0.0f);
+	m_Walls[1].GetTransform().SetPosition(7.0f, 3.0f, 10.0f);
+	m_Walls[2].GetTransform().SetRotation(-XM_PIDIV2, XM_PIDIV2, 0.0f);
+	m_Walls[2].GetTransform().SetPosition(10.0f, 3.0f, 0.0f);
+	m_Walls[3].GetTransform().SetRotation(-XM_PIDIV2, XM_PI, 0.0f);
+	m_Walls[3].GetTransform().SetPosition(0.0f, 3.0f, -10.0f);
+	m_Walls[4].GetTransform().SetRotation(-XM_PIDIV2, -XM_PIDIV2, 0.0f);
+	m_Walls[4].GetTransform().SetPosition(-10.0f, 3.0f, 0.0f);
+
 
 	material.ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
@@ -218,21 +325,36 @@ bool GameApp::InitResource() {
 	m_Water.SetTexture(texture.Get());
 	m_Water.SetMaterial(material);
 
+	// 初始化镜面
+	material.ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	material.diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
+	material.specular = XMFLOAT4(0.4f, 0.4f, 0.4f, 16.0f);
+	HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\ice.dds", nullptr, texture.ReleaseAndGetAddressOf()));
+	m_Mirror.SetBuffer(m_pd3dDevice.Get(),
+		Geometry::CreatePlane(XMFLOAT2(8.0f, 8.0f), XMFLOAT2(1.0f, 1.0f)));
+	m_Mirror.GetTransform().SetRotation(-XM_PIDIV2, 0.0f, 0.0f);
+	m_Mirror.GetTransform().SetPosition(0.0f, 3.0f, 10.0f);
+	m_Mirror.SetTexture(texture.Get());
+	m_Mirror.SetMaterial(material);
+
 
 	auto camera = std::shared_ptr<ThirdPersonCamera>(new ThirdPersonCamera);
 	m_pCamera = camera;
 	camera->SetViewPort(0.0f, 0.0f, (float)m_ClientWidth, (float)m_ClientHeight);
 	camera->SetTarget(XMFLOAT3(0.0f, 0.5f, 0.0f));
 	camera->SetDistance(8.0f);
-	camera->SetDistanceMinMax(2.0f, 14.0f);
+	camera->SetDistanceMinMax(3.0f, 20.0f);
 	camera->SetRotationX(XM_PIDIV4);
 	
 
+	m_CBFrame.view = XMMatrixTranspose(m_pCamera->GetViewXM());
+	XMStoreFloat4(&m_CBFrame.eyePos, m_pCamera->GetPositionXM());
 
 	m_pCamera->SetFrustum(XM_PI / 3, AspectRatio(), 0.5f, 1000.0f);
 	m_CBOnResize.proj = XMMatrixTranspose(m_pCamera->GetProjXM());
 
 	// 初始化不会变化的值
+	m_CBRarely.reflection = XMMatrixTranspose(XMMatrixReflect(XMVectorSet(0.0f, 0.0f, -1.0f, 10.0f)));
 	// 环境光
 	m_CBRarely.dirLight[0].ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_CBRarely.dirLight[0].diffuse = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -252,13 +374,13 @@ bool GameApp::InitResource() {
 
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[2].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-	memcpy_s(mappedData.pData, sizeof(CBChangesOnResize), &m_CBOnResize, sizeof(CBChangesOnResize));
-	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[2].Get(), 0);
-
 	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[3].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
-	memcpy_s(mappedData.pData, sizeof(CBChangesRarely), &m_CBRarely, sizeof(CBChangesRarely));
+	memcpy_s(mappedData.pData, sizeof(CBChangesOnResize), &m_CBOnResize, sizeof(CBChangesOnResize));
 	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[3].Get(), 0);
+
+	HR(m_pd3dImmediateContext->Map(m_pConstantBuffers[4].Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData));
+	memcpy_s(mappedData.pData, sizeof(CBChangesRarely), &m_CBRarely, sizeof(CBChangesRarely));
+	m_pd3dImmediateContext->Unmap(m_pConstantBuffers[4].Get(), 0);
 
 
 	RenderStates::InitAll(m_pd3dDevice.Get());
@@ -273,32 +395,39 @@ bool GameApp::InitResource() {
 	m_pd3dImmediateContext->VSSetConstantBuffers(0, 1, m_pConstantBuffers[0].GetAddressOf());
 	m_pd3dImmediateContext->VSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
 	m_pd3dImmediateContext->VSSetConstantBuffers(2, 1, m_pConstantBuffers[2].GetAddressOf());
-	
+	m_pd3dImmediateContext->VSSetConstantBuffers(3, 1, m_pConstantBuffers[3].GetAddressOf());
+	m_pd3dImmediateContext->VSSetConstantBuffers(4, 1, m_pConstantBuffers[4].GetAddressOf());
 
 	m_pd3dImmediateContext->PSSetConstantBuffers(0, 1, m_pConstantBuffers[0].GetAddressOf());
 	m_pd3dImmediateContext->PSSetConstantBuffers(1, 1, m_pConstantBuffers[1].GetAddressOf());
-	m_pd3dImmediateContext->PSSetConstantBuffers(3, 1, m_pConstantBuffers[3].GetAddressOf());
+	m_pd3dImmediateContext->PSSetConstantBuffers(2, 1, m_pConstantBuffers[2].GetAddressOf());
+	m_pd3dImmediateContext->PSSetConstantBuffers(4, 1, m_pConstantBuffers[4].GetAddressOf());
 
-	m_pd3dImmediateContext->RSSetState(RenderStates::RSNoCull.Get());
-	m_pd3dImmediateContext->PSSetSamplers(0, 1, RenderStates::SSAnistropicWrap.GetAddressOf());
-	m_pd3dImmediateContext->OMSetBlendState(RenderStates::BSTransparent.Get(), nullptr, 0xffffffff);
+	
+	m_pd3dImmediateContext->PSSetSamplers(0, 1, RenderStates::SSLinearWrap.GetAddressOf());
+	
 
 
 	D3D11SetDebugObjectName(m_pVertexLayout2D.Get(), "VertexPosTexLayout");
 	D3D11SetDebugObjectName(m_pVertexLayout3D.Get(), "VertexPosNormalTexLayout");
 	D3D11SetDebugObjectName(m_pConstantBuffers[0].Get(), "CBDrawing");
-	D3D11SetDebugObjectName(m_pConstantBuffers[1].Get(), "CBFrame");
-	D3D11SetDebugObjectName(m_pConstantBuffers[2].Get(), "CBOnResize");
-	D3D11SetDebugObjectName(m_pConstantBuffers[3].Get(), "CBRarely");
+	D3D11SetDebugObjectName(m_pConstantBuffers[1].Get(), "CBStates");
+	D3D11SetDebugObjectName(m_pConstantBuffers[2].Get(), "CBFrame");
+	D3D11SetDebugObjectName(m_pConstantBuffers[3].Get(), "CBOnResize");
+	D3D11SetDebugObjectName(m_pConstantBuffers[4].Get(), "CBRarely");
 	D3D11SetDebugObjectName(m_pVertexShader2D.Get(), "Basic_VS_2D");
 	D3D11SetDebugObjectName(m_pVertexShader3D.Get(), "Basic_VS_3D");
 	D3D11SetDebugObjectName(m_pPixelShader2D.Get(), "Basic_PS_2D");
 	D3D11SetDebugObjectName(m_pPixelShader3D.Get(), "Basic_PS_3D");
 	m_Floor.SetDebugObjectName("Floor");
+	m_Mirror.SetDebugObjectName("Mirror");
+	m_Water.SetDebugObjectName("Water");
 	m_Walls[0].SetDebugObjectName("Walls[0]");
 	m_Walls[1].SetDebugObjectName("Walls[1]");
 	m_Walls[2].SetDebugObjectName("Walls[2]");
 	m_Walls[3].SetDebugObjectName("Walls[3]");
+	m_Walls[4].SetDebugObjectName("Walls[4]");
+	m_WireFence.SetDebugObjectName("WireFence");
 	return true;
 }
 
