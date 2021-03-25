@@ -140,7 +140,7 @@ void GameApp::UpdateScene(float dt) {
 			m_pCamera = cam1st;
 		}
 
-		XMFLOAT3 pos = m_WoodCrate.GetTransform().GetPosition();
+		XMFLOAT3 pos = m_BoltAnim.GetTransform().GetPosition();
 		XMFLOAT3 target = (!pos.x && !pos.z ? XMFLOAT3{ 0.0f, 0.0f, 1.0f } : XMFLOAT3{});
 		cam1st->LookAt(pos, target, XMFLOAT3(0.0f, 1.0f, 0.0f));
 
@@ -153,7 +153,7 @@ void GameApp::UpdateScene(float dt) {
 			m_pCamera = cam3rt;
 		}
 
-		XMFLOAT3 target = m_WoodCrate.GetTransform().GetPosition();
+		XMFLOAT3 target = m_BoltAnim.GetTransform().GetPosition();
 		cam3rt->SetTarget(target);
 		cam3rt->SetDistance(5.0f);
 		cam3rt->SetDistanceMinMax(2.0f, 14.0f);
@@ -169,7 +169,7 @@ void GameApp::UpdateScene(float dt) {
 			m_pCamera = cam1st;
 		}
 
-		XMFLOAT3 pos = m_WoodCrate.GetTransform().GetPosition();
+		XMFLOAT3 pos = m_BoltAnim.GetTransform().GetPosition();
 		XMFLOAT3 look{ 0.0f, 0.0f, 1.0f };
 		XMFLOAT3 up{ 0.0f, 1.0f, 0.0f };
 		pos.y += 3;
@@ -181,6 +181,14 @@ void GameApp::UpdateScene(float dt) {
 	if (keyState.IsKeyDown(Keyboard::Escape))
 		SendMessage(MainHnd(), WM_DESTROY, 0, 0);
 
+	static int currBoltFrame = 0;
+	static float frameTime = 0.0f;
+	m_BoltAnim.SetTexture(mBoltSRVs[currBoltFrame].Get());
+	if (frameTime > 1.0f / 60) {
+		currBoltFrame = (currBoltFrame + 1) % 60;
+		frameTime -= 1.0f / 60;
+	}
+	frameTime += dt;
 }
 
 void GameApp::DrawScene() {
@@ -214,6 +222,8 @@ void GameApp::DrawScene() {
 	m_BasicEffect.SetShadowState(false);
 	m_WoodCrate.SetMaterial(m_WoodCrateMat);
 
+	m_BasicEffect.SetDrawBoltAnimNoDepthWriteWithStencil(m_pd3dImmediateContext.Get(), 1);
+	m_BoltAnim.Draw(m_pd3dImmediateContext.Get(), m_BasicEffect);
 
 	m_BasicEffect.SetReflectionState(false);
 	m_BasicEffect.SetRenderAlphaBlendWithStencil(m_pd3dImmediateContext.Get(), 1);
@@ -234,6 +244,9 @@ void GameApp::DrawScene() {
 
 	m_BasicEffect.SetShadowState(false);
 	m_WoodCrate.SetMaterial(m_WoodCrateMat);
+
+	m_BasicEffect.SetDrawBoltAnimNoDepthWrite(m_pd3dImmediateContext.Get());
+	m_BoltAnim.Draw(m_pd3dImmediateContext.Get(), m_BasicEffect);
 
 	if (m_pd2dRenderTarget != nullptr) {
 		m_pd2dRenderTarget->BeginDraw();
@@ -269,9 +282,19 @@ bool GameApp::InitResource() {
 	m_ShadowMat.diffuse = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
 	m_ShadowMat.specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 16.0f);
 
+	mBoltSRVs.assign(60, nullptr);
+	wchar_t wstr[50];
+	for (int i = 1; i <= 60; ++i) {
+		wsprintf(wstr, L"..\\Texture\\BoltAnim\\Bolt%03d.bmp", i);
+		HR(CreateWICTextureFromFile(m_pd3dDevice.Get(), wstr, nullptr, mBoltSRVs[static_cast<size_t>(i) - 1].GetAddressOf()));
+	}
+	m_BoltAnim.SetBuffer(m_pd3dDevice.Get(), Geometry::CreateCylinderNoCap(4.0f, 4.0f));
+	m_BoltAnim.GetTransform().SetPosition(0.0f, 2.01f, 0.0f);
+	m_BoltAnim.SetMaterial(material);
+
 	HR(CreateDDSTextureFromFile(m_pd3dDevice.Get(), L"..\\Texture\\WoodCrate.dds", nullptr, texture.GetAddressOf()));
 	m_WoodCrate.SetBuffer(m_pd3dDevice.Get(), Geometry::CreateBox());
-	m_WoodCrate.GetTransform().SetPosition(0.0f, 0.01f, 7.5f);
+	m_WoodCrate.GetTransform().SetPosition(0.0f, 0.01f, 0.0f);
 	m_WoodCrate.SetTexture(texture.Get());
 	m_WoodCrate.SetMaterial(material);
 
@@ -323,6 +346,7 @@ bool GameApp::InitResource() {
 	m_pCamera = camera;
 	camera->SetViewPort(0.0f, 0.0f, (float)m_ClientWidth, (float)m_ClientHeight);
 	camera->SetDistance(5.0f);
+	camera->SetTarget(XMFLOAT3(0.0f, 0.5f, 0.0f));
 	camera->SetDistanceMinMax(2.0f, 14.0f);
 	camera->SetRotationX(XM_PIDIV2);
 	
@@ -357,6 +381,7 @@ bool GameApp::InitResource() {
 	pointLight.range = 25.0f;
 	m_BasicEffect.SetPointLight(0, pointLight);
 
+	m_BoltAnim.SetDebugObjectName("BoltAnim");
 	
 	m_Floor.SetDebugObjectName("Floor");
 	m_Mirror.SetDebugObjectName("Mirror");

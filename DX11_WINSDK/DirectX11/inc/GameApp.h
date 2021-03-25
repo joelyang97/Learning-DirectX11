@@ -32,6 +32,9 @@ private:
 	GameObject m_Floor;
 	std::vector<GameObject> m_Walls;
 	GameObject m_Mirror;
+	GameObject m_BoltAnim;
+
+	std::vector<ComPtr<ID3D11ShaderResourceView>> mBoltSRVs;
 
 	Material m_ShadowMat;
 	Material m_WoodCrateMat;

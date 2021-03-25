@@ -23,10 +23,13 @@ public:
 	static ComPtr<ID3D11BlendState> BSNoColorWrite;
 	static ComPtr<ID3D11BlendState> BSTransparent;
 	static ComPtr<ID3D11BlendState> BSAlphaToCoverage;
+	static ComPtr<ID3D11BlendState> BSAdditive;
 
 	static ComPtr<ID3D11DepthStencilState> DSSWriteStencil;
 	static ComPtr<ID3D11DepthStencilState> DSSDrawWithStencil;
 	static ComPtr<ID3D11DepthStencilState> DSSNoDoubleBlend;
 	static ComPtr<ID3D11DepthStencilState> DSSNoDepthTest;
 	static ComPtr<ID3D11DepthStencilState> DSSNoDepthWrite;
+	static ComPtr<ID3D11DepthStencilState> DSSNoDepthTestWithStencil;
+	static ComPtr<ID3D11DepthStencilState> DSSNoDepthWriteWithStencil;
 };

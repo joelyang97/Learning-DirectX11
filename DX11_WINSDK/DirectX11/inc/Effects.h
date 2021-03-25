@@ -42,6 +42,11 @@ public:
 	void Set2DRenderDefault(ID3D11DeviceContext* deviceContext);
 	void Set2DRenderAlphaBlend(ID3D11DeviceContext* deviceContext);
 
+	void SetDrawBoltAnimNoDepthTest(ID3D11DeviceContext* deviceContext);
+	void SetDrawBoltAnimNoDepthWrite(ID3D11DeviceContext* deviceContext);
+	void SetDrawBoltAnimNoDepthTestWithStencil(ID3D11DeviceContext* deviceContext, UINT stencilRef);
+	void SetDrawBoltAnimNoDepthWriteWithStencil(ID3D11DeviceContext* deviceContext, UINT stencilRef);
+
 	void XM_CALLCONV SetWorldMatrix(DirectX::FXMMATRIX W);
 	void XM_CALLCONV SetViewMatrix(DirectX::FXMMATRIX V);
 	void XM_CALLCONV SetProjMatrix(DirectX::FXMMATRIX P);
