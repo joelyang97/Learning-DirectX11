@@ -151,7 +151,10 @@
     <ClInclude Include="inc\d3dApp.h" />
     <ClInclude Include="inc\d3dUtil.h" />
     <ClInclude Include="inc\DXTrace.h" />
+    <ClInclude Include="inc\EffectHelper.h" />
+    <ClInclude Include="inc\Effects.h" />
     <ClInclude Include="inc\GameApp.h" />
+    <ClInclude Include="inc\GameObject.h" />
     <ClInclude Include="inc\GameTimer.h" />
     <ClInclude Include="inc\Geometry.h" />
     <ClInclude Include="inc\LightHelper.h" />
@@ -164,11 +167,13 @@
     <ClCompile Include="common\Keyboard.cpp" />
     <ClCompile Include="common\Mouse.cpp" />
     <ClCompile Include="common\WICTextureLoader.cpp" />
+    <ClCompile Include="src\BasicEffect.cpp" />
     <ClCompile Include="src\Camera.cpp" />
     <ClCompile Include="src\d3dApp.cpp" />
     <ClCompile Include="src\d3dUtil.cpp" />
     <ClCompile Include="src\DXTrace.cpp" />
     <ClCompile Include="src\GameApp.cpp" />
+    <ClCompile Include="src\GameObject.cpp" />
     <ClCompile Include="src\GameTimer.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\RenderStates.cpp" />

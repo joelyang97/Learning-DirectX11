@@ -1,68 +1,11 @@
 #pragma once
 
 #include "d3dApp.h"
-#include "LightHelper.h"
-#include "Geometry.h"
 #include "Camera.h"
-#include "RenderStates.h"
+#include "GameObject.h"
 
 class GameApp : public D3DApp {
 public:
-	struct CBChangesEveryDrawing {
-		DirectX::XMMATRIX world;
-		DirectX::XMMATRIX worldInvTranspose;
-		Material material;
-	};
-
-	struct CBDrawingStates {
-		int isReflection;
-		DirectX::XMFLOAT3 pad;
-	};
-
-	struct CBChangesEveryFrame {
-		DirectX::XMMATRIX view;
-		DirectX::XMFLOAT4 eyePos;
-	};
-
-	struct CBChangesOnResize {
-		DirectX::XMMATRIX proj;
-	};
-
-	struct CBChangesRarely {
-		DirectX::XMMATRIX reflection;
-		DirectionalLight dirLight[10];
-		PointLight pointLight[10];
-		SpotLight spotLight[10];
-		int numDirLight;
-		int numPointLight;
-		int numSpotLight;
-		float pad;
-	};
-
-	class GameObject {
-	public:
-		GameObject();
-
-		Transform& GetTransform();
-		const Transform& GetTransform() const;
-
-		template<class VertexType, class IndexType>
-		void SetBuffer(ID3D11Device* device, const Geometry::MeshData<VertexType, IndexType>& meshData);
-		void SetTexture(ID3D11ShaderResourceView* texture);
-		void SetMaterial(const Material& material);
-
-		void Draw(ID3D11DeviceContext* deviceContext);
-		void SetDebugObjectName(const std::string& name);
-
-	private:
-		Transform m_Transform;
-		Material m_Material;
-		ComPtr<ID3D11ShaderResourceView> m_pTexture;
-		ComPtr<ID3D11Buffer> m_pVertexBuffer;
-		ComPtr<ID3D11Buffer> m_pIndexBuffer;
-		UINT m_VertexStride;
-		UINT m_IndexCount;
-	};
 
 	enum class CameraMode{FirstPerson, ThirdPerson, Free};
 
@@ -77,7 +20,6 @@ public:
 
 
 private:
-	bool InitEffect();
 	bool InitResource();
 
 
@@ -86,25 +28,15 @@ private:
 	ComPtr<IDWriteFont> m_pFont;
 	ComPtr<IDWriteTextFormat> m_pTextFormat;
 
-	ComPtr<ID3D11InputLayout> m_pVertexLayout2D;
-	ComPtr<ID3D11InputLayout> m_pVertexLayout3D;
-	ComPtr<ID3D11Buffer> m_pConstantBuffers[5];
-
-	GameObject m_WireFence;
+	GameObject m_WoodCrate;
 	GameObject m_Floor;
-	GameObject m_Water;
 	std::vector<GameObject> m_Walls;
 	GameObject m_Mirror;
 
-	ComPtr<ID3D11VertexShader> m_pVertexShader3D;
-	ComPtr<ID3D11PixelShader> m_pPixelShader3D;
-	ComPtr<ID3D11VertexShader> m_pVertexShader2D;
-	ComPtr<ID3D11PixelShader> m_pPixelShader2D;
+	Material m_ShadowMat;
+	Material m_WoodCrateMat;
 
-	CBDrawingStates m_CBStates;
-	CBChangesEveryFrame m_CBFrame;
-	CBChangesOnResize m_CBOnResize;
-	CBChangesRarely m_CBRarely;
+	BasicEffect m_BasicEffect;
 
 	std::shared_ptr<Camera> m_pCamera;
 	CameraMode m_CameraMode;

@@ -18,7 +18,7 @@ float4 PS_3D(VertexPosHWNormalTex pIn) : SV_TARGET
     int i;
     
     [unroll]
-    for (i = 0; i < g_NumDirLight; ++i)
+    for (i = 0; i < 5; ++i)
     {
         DirectionalLight dirLight = g_DirLight[i];
         [flatten]
@@ -35,7 +35,7 @@ float4 PS_3D(VertexPosHWNormalTex pIn) : SV_TARGET
     
     PointLight pointLight;
     [unroll]
-    for (i = 0; i < g_NumPointLight; ++i)
+    for (i = 0; i < 5; ++i)
     {
         pointLight = g_PointLight[i];
         [flatten]
@@ -51,7 +51,7 @@ float4 PS_3D(VertexPosHWNormalTex pIn) : SV_TARGET
     
     SpotLight spotLight;
     [unroll]
-    for (i = 0; i < g_NumSpotLight; ++i)
+    for (i = 0; i < 5; ++i)
     {
         spotLight = g_SpotLight[i];
         [flatten]
