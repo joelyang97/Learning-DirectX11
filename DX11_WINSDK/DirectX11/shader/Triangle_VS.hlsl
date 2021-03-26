@@ -1,9 +1,10 @@
-#include "Triangle.hlsli"
+#include "Basic.hlsli"
 
-VertexOut VS( VertexIn vIn )
+VertexPosHColor VS( VertexPosColor vIn )
 {
-	VertexOut vOut;
-	vOut.posH = float4(vIn.pos, 1.0f);
-	vOut.color = vIn.color;
-	return vOut;
+    matrix worldViewProj = mul(mul(g_World, g_View), g_Proj);
+    VertexPosHColor vOut;
+    vOut.Color = vIn.Color;
+    vOut.PosH = mul(float4(vIn.PosL, 1.0f), worldViewProj);
+    return vOut;
 }

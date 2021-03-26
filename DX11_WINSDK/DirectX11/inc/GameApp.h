@@ -7,8 +7,8 @@
 class GameApp : public D3DApp {
 public:
 
-	enum class CameraMode{FirstPerson, ThirdPerson, Free};
 
+	enum class Mode {SplitedTriangle, CylinderNoCap, CylinderNoCapWithNormal};
 public:
 	GameApp(HINSTANCE hInstance);
 	~GameApp();
@@ -22,26 +22,18 @@ public:
 private:
 	bool InitResource();
 
+	void ResetTriangle();
+	void ResetRoundWire();
 
 private:
 	ComPtr<ID2D1SolidColorBrush> m_pColorBrush;
 	ComPtr<IDWriteFont> m_pFont;
 	ComPtr<IDWriteTextFormat> m_pTextFormat;
 
-	GameObject m_WoodCrate;
-	GameObject m_Floor;
-	std::vector<GameObject> m_Walls;
-	GameObject m_Mirror;
-	GameObject m_BoltAnim;
-
-	std::vector<ComPtr<ID3D11ShaderResourceView>> mBoltSRVs;
-
-	Material m_ShadowMat;
-	Material m_WoodCrateMat;
+	ComPtr<ID3D11Buffer> m_pVertexBuffer;
+	int m_VertexCount;
+	Mode m_ShowMode;
 
 	BasicEffect m_BasicEffect;
-
-	std::shared_ptr<Camera> m_pCamera;
-	CameraMode m_CameraMode;
 
 };

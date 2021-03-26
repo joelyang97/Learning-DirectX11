@@ -47,6 +47,10 @@ public:
 	void SetDrawBoltAnimNoDepthTestWithStencil(ID3D11DeviceContext* deviceContext, UINT stencilRef);
 	void SetDrawBoltAnimNoDepthWriteWithStencil(ID3D11DeviceContext* deviceContext, UINT stencilRef);
 
+	void SetRenderSplitedTriangle(ID3D11DeviceContext* deviceContext);
+	void SetRenderCylinderNoCap(ID3D11DeviceContext* deviceContext);
+	void SetRenderNormal(ID3D11DeviceContext* deviceContext);
+
 	void XM_CALLCONV SetWorldMatrix(DirectX::FXMMATRIX W);
 	void XM_CALLCONV SetViewMatrix(DirectX::FXMMATRIX V);
 	void XM_CALLCONV SetProjMatrix(DirectX::FXMMATRIX P);
@@ -66,6 +70,8 @@ public:
 
 	void SetReflectionState(bool isOn);
 	void SetShadowState(bool isOn);
+
+	void SetCylinderHeight(float height);
 
 	void Apply(ID3D11DeviceContext* deviceContext) override;
 

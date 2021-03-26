@@ -1,6 +1,6 @@
-#include "Triangle.hlsli"
+#include "Basic.hlsli"
 
-float4 PS(VertexIn pIn) : SV_TARGET
+float4 PS(VertexPosHColor pIn) : SV_TARGET
 {
-	return pIn.color;
+	return pIn.Color;
 }
